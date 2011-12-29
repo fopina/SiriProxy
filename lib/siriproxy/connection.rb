@@ -88,18 +88,19 @@ class SiriProxy::Connection < EventMachine::Connection
       data = line.split(" ", 2).last
       write_relative_file("~/.siriproxy/ace_host", data)
     end
-    self.output_buffer << (line + "\x0d\x0a") #Restore the CR-LF to the end of the line
     
     if self.processed_headers == true and @faux == true
       if @auth_data == nil or @auth_data["ace_host"] == nil
         puts "[Error] No ace host available."
       else
         puts "[Info] Found cached ace host."
-        self.output_buffer << (@auth_data["ace_host"] + "\x0d\x0a")
+        self.output_buffer << "X-Ace-Host: " + (@auth_data["ace_host"] + "\x0d\x0a")
         puts "[Info - #{self.name}] Using X-Ace-Host: #{@auth_data["ace_host"]}" if $LOG_LEVEL > 1
       end
     end
 
+    self.output_buffer << (line + "\x0d\x0a") #Restore the CR-LF to the end of the line
+    
     flush_output_buffer()
   end
 
