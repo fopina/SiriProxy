@@ -91,7 +91,7 @@ class SiriProxy::Connection < EventMachine::Connection
     self.output_buffer << (line + "\x0d\x0a") #Restore the CR-LF to the end of the line
     
     if self.processed_headers == true and @faux == true
-      if @auth_data == nil
+      if @auth_data == nil or @auth_data["ace_host"] == nil
         puts "[Error] No ace host available."
       else
         puts "[Info] Found cached ace host."
