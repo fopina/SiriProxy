@@ -57,6 +57,7 @@ class SiriProxy::Connection < EventMachine::Connection
     map["speech_id"] = read_relative_file("~/.siriproxy/speech_id")
     map["assistant_id"] = read_relative_file("~/.siriproxy/assistant_id")
     map["session_data"] = read_relative_file("~/.siriproxy/session_data")
+    map["ace_host"] = read_relative_file("~/.siriproxy/ace_host")
 
     puts map
     map
@@ -83,8 +84,21 @@ class SiriProxy::Connection < EventMachine::Connection
         puts "[Warning] Non-4S device connected."
         @faux = true
       end
+    elsif line.match(/^X-Ace-Host:/)
+      data = line.split(" ", 2).last
+      write_relative_file("~/.siriproxy/ace_host", data)
     end
     self.output_buffer << (line + "\x0d\x0a") #Restore the CR-LF to the end of the line
+    
+    if self.processed_headers == true and @faux == true
+      if @auth_data == nil
+        puts "[Error] No ace host available."
+      else
+        puts "[Info] Found cached ace host."
+        self.output_buffer << (@auth_data["ace_host"] + "\x0d\x0a")
+        puts "[Info - #{self.name}] Using X-Ace-Host: #{@auth_data["ace_host"]}" if $LOG_LEVEL > 1
+      end
+    end
 
     flush_output_buffer()
   end
