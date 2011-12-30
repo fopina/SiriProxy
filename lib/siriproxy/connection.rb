@@ -232,49 +232,32 @@ class SiriProxy::Connection < EventMachine::Connection
       return nil
     end
 
+
     if object["properties"] != nil
-      if object["properties"]["sessionValidationData"] != nil
-        if @faux == false
+      if @faux == false
+        if object["properties"]["sessionValidationData"] != nil
           # We're on a 4S
           data = object["properties"]["sessionValidationData"].unpack('H*').join("")
           write_relative_file("~/.siriproxy/session_data", data)
-        else
-          if @auth_data == nil
-            puts "[Error] No session data available."
-          else
-            puts "[Info] Found cached session data."
-            object["properties"]["sessionValidationData"] = encode_data(@auth_data["session_data"])
-          end
         end
-      end
-
-      if object["properties"]["speechId"] != nil
-        if @faux == false
+        if object["properties"]["speechId"] != nil
           # We're on a 4S
           data = object["properties"]["speechId"]
           write_relative_file("~/.siriproxy/speech_id", data)
-        else
-          if @auth_data == nil
-            puts "[Error] No speech id available."
-          else
-            puts "[Info] Found cached speech id."
-            object["properties"]["speechId"] = @auth_data["speech_id"]
-          end
         end
-      end
-
-      if object["properties"]["assistantId"] != nil
-        if @faux == false
+        if object["properties"]["assistantId"] != nil
           # We're on a 4S
           data = object["properties"]["assistantId"]
           write_relative_file("~/.siriproxy/assistant_id", data)
+        end
+      else
+        if @auth_data == nil
+          puts "[Error] No cached data available."
         else
-          if @auth_data == nil
-            puts "[Error] No assistant id available."
-          else
-            puts "[Info] Found cached assistant id."
-            object["properties"]["assistantId"] = @auth_data["assistant_id"]
-          end
+          puts "[Info] Found cached data."
+          object["properties"]["sessionValidationData"] = encode_data(@auth_data["session_data"])
+          object["properties"]["speechId"] = @auth_data["speech_id"]
+          object["properties"]["assistantId"] = @auth_data["assistant_id"]
         end
       end
     end
