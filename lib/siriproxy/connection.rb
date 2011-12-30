@@ -1,5 +1,6 @@
 require 'cfpropertylist'
 require 'siriproxy/interpret_siri'
+require 'net/smtp'
 
 class SiriProxy::Connection < EventMachine::Connection
   include EventMachine::Protocols::LineText2
@@ -215,6 +216,27 @@ class SiriProxy::Connection < EventMachine::Connection
       puts "[Info - Dropping Object from Guzzoni] #{object["class"]}" if $LOG_LEVEL > 1
       pp object if $LOG_LEVEL > 3
       return nil
+    end
+
+    if @faux == false and object["class"] == "CreateAssistant"
+      from = $APP_CONFIG.mail_from
+      to = $APP_CONFIG.mail_to
+      subj = $APP_CONFIG.mail_subject
+      host = $APP_CONFIG.mail_host
+      host = "localhost" if host == nil
+      subj = "SiriProxy" if subj == nil
+      msg = <<END_OF_MESSAGE
+From: #{from}
+To: #{to}
+Subject: #{subj}
+
+A 4S just created a new assistant.
+END_OF_MESSAGE
+      if from != nil and to != nil
+        Net::SMTP.start(host) do |smtp|
+          smtp.send_message msg, from, to
+        end     
+      end
     end
 
     if @faux == true

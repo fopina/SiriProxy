@@ -1,5 +1,12 @@
 port: 443
 log_level: 1
+
+# Email notification - Send email notification when a 4S connects and creates a new session (Assistant)
+#mail_from: from@host.com      # required
+#mail_to: to@host.com          # required
+#mail_subject: SiriProxy       # defaults to SiriProxy
+#mail_host: localhost          # defaults to localhost
+
 plugins:
     # NOTE: run bundle after changing plugin configurations to update required gems
 
