@@ -57,7 +57,6 @@ class SiriProxy::Connection < EventMachine::Connection
     map["speech_id"] = read_relative_file("~/.siriproxy/speech_id")
     map["assistant_id"] = read_relative_file("~/.siriproxy/assistant_id")
     map["session_data"] = read_relative_file("~/.siriproxy/session_data")
-    map["ace_host"] = read_relative_file("~/.siriproxy/ace_host")
 
     puts map
     map
@@ -84,23 +83,9 @@ class SiriProxy::Connection < EventMachine::Connection
         puts "[Warning] Non-4S device connected."
         @faux = true
       end
-    elsif line.match(/^X-Ace-Host:/)
-      data = line.split(" ", 2).last
-      write_relative_file("~/.siriproxy/ace_host", data)
     end
-    
-    if self.processed_headers == true and @faux == true
-      if @auth_data == nil or @auth_data["ace_host"] == nil
-        puts "[Error] No ace host available."
-      else
-        puts "[Info] Found cached ace host."
-        self.output_buffer << "X-Ace-Host: " + (@auth_data["ace_host"] + "\x0d\x0a")
-        puts "[Info - #{self.name}] Using X-Ace-Host: #{@auth_data["ace_host"]}" if $LOG_LEVEL > 1
-      end
-    end
-
     self.output_buffer << (line + "\x0d\x0a") #Restore the CR-LF to the end of the line
-    
+
     flush_output_buffer()
   end
 
@@ -232,32 +217,49 @@ class SiriProxy::Connection < EventMachine::Connection
       return nil
     end
 
-
     if object["properties"] != nil
-      if @faux == false
-        if object["properties"]["sessionValidationData"] != nil
+      if object["properties"]["sessionValidationData"] != nil
+        if @faux == false
           # We're on a 4S
           data = object["properties"]["sessionValidationData"].unpack('H*').join("")
           write_relative_file("~/.siriproxy/session_data", data)
+        else
+          if @auth_data == nil
+            puts "[Error] No session data available."
+          else
+            puts "[Info] Found cached session data."
+            object["properties"]["sessionValidationData"] = encode_data(@auth_data["session_data"])
+          end
         end
-        if object["properties"]["speechId"] != nil
+      end
+
+      if object["properties"]["speechId"] != nil
+        if @faux == false
           # We're on a 4S
           data = object["properties"]["speechId"]
           write_relative_file("~/.siriproxy/speech_id", data)
+        else
+          if @auth_data == nil
+            puts "[Error] No speech id available."
+          else
+            puts "[Info] Found cached speech id."
+            object["properties"]["speechId"] = @auth_data["speech_id"]
+          end
         end
-        if object["properties"]["assistantId"] != nil
+      end
+
+      if object["properties"]["assistantId"] != nil
+        if @faux == false
           # We're on a 4S
           data = object["properties"]["assistantId"]
           write_relative_file("~/.siriproxy/assistant_id", data)
-        end
-      else
-        if @auth_data == nil
-          puts "[Error] No cached data available."
         else
-          puts "[Info] Found cached data."
-          object["properties"]["sessionValidationData"] = encode_data(@auth_data["session_data"])
-          object["properties"]["speechId"] = @auth_data["speech_id"]
-          object["properties"]["assistantId"] = @auth_data["assistant_id"]
+          if @auth_data == nil
+            puts "[Error] No assistant id available."
+          else
+            puts "[Info] Found cached assistant id."
+            object["properties"]["assistantId"] = @auth_data["assistant_id"]
+          end
         end
       end
     end
