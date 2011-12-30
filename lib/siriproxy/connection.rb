@@ -217,6 +217,15 @@ class SiriProxy::Connection < EventMachine::Connection
       return nil
     end
 
+    if @faux == true
+      if object["class"] == "CreateAssistant"
+        puts "[Warning] Non-4S devices cannot CreateAssistant. This device either requires proper initial configuration (refer to http://methoddk.com/siriguide/ Step 3) or the cached session expired and a new 4S needs to connect."
+      elsif object["class"] == "DestroyAssistant"
+        puts "[Warning] Dropping DestroyAssistant packet from non-4S."
+        return nil
+      end 
+    end
+
     if object["properties"] != nil
       if object["properties"]["sessionValidationData"] != nil
         if @faux == false
